@@ -1,4 +1,5 @@
 import datetime
+import json
 import uuid
 
 import redis
@@ -26,12 +27,31 @@ def create_announcement():
 
 @app.route('/announcements/get', methods=['GET'])
 def get_announcement():
-    announcement = r.get(id)
-    print(type(announcement))
-    if announcement:
-        return jsonify(announcement.to_dict()), 200
-    else:
-        return jsonify({'error': 'Announcement not found'}), 404
+    start_time = 0.0
+    end_time = datetime.datetime.now().timestamp()
+
+    announcements = []
+    # use zrange(byscore=True): somehow doesnt work
+    keys = r.zrangebyscore("announcements", start_time, end_time)
+
+    for key in keys:
+        announcement_data = r.hgetall(key)
+        announcement_dict = {}
+
+        # Decode the key value pair that's hashed
+        for k, v in announcement_data.items():
+            key = k.decode("utf-8")
+            val = v.decode("utf-8")
+            announcement_dict[key] = val
+        # Build Announcement object
+        announcement = Announcements(
+            announcement_dict['title'],
+            announcement_dict['content'],
+            announcement_dict['timestamp'])
+
+        announcements.append(announcement.to_dict())
+
+    return jsonify(announcements), 200
 
 
 @app.route('/')
