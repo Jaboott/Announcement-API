@@ -1,28 +1,31 @@
-from datetime import datetime
+import datetime
+import uuid
+
+import redis
+
 from app.models import Announcements
 from app import app
 from flask import jsonify, request
 
-# Dict as test database
-r = {}
-id = 0
+r = redis.Redis(host='localhost', port=6379, db=0)
 
 
 @app.route('/announcements/post', methods=['POST'])
 def create_announcement():
-    global id
     data = request.get_json()
+    # Epoch time
+    date = datetime.datetime.now().timestamp()
+    announcement = Announcements(data['title'], data['content'], date)
+    announcement_id = str(uuid.uuid4())
 
-    announcement = Announcements(data['title'], data['content'], datetime.now())
-
-    r[id] = announcement
-    id = id + 1
+    r.hset(announcement_id, mapping=announcement.to_dict())
+    r.zadd("announcements", {announcement_id: date})
 
     return jsonify(announcement.to_dict()), 201
 
 
-@app.route('/announcements/get/<int:id>', methods=['GET'])
-def get_announcement(id):
+@app.route('/announcements/get', methods=['GET'])
+def get_announcement():
     announcement = r.get(id)
     print(type(announcement))
     if announcement:
