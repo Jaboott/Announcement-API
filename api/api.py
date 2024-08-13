@@ -28,16 +28,9 @@ google = oauth.register(
 
 class Announcement:
     def __init__(self, title, content, timestamp):
-        """
-        Initialize an Announcements object.
-
-        :param title: Title of the announcement.
-        :param content: Body of the announcement.
-        :param timestamp: The time the announcement is created in Epoch time
-        """
-
         self.title = title
         self.content = content
+        # Represented in Epoch time
         self.timestamp = timestamp
 
     def to_dict(self):
@@ -55,16 +48,24 @@ def post_announcement():
         return jsonify({'error': 'Unauthorized'}), 401
 
     data = request.get_json()
-    # Optional ttl field for the announcement
-    args = request.args.get('ttl')
-    # Epoch time
+
+    # Validating request fields
+    required = ['title', 'content', 'domain']
+    for field in required:
+        if field not in data:
+            return jsonify({'error': 'Missing ' + field + ' field'}), 400
+
+    # Setting timestamp as Epoch time
     date = datetime.datetime.now().timestamp()
     announcement = Announcement(data['title'], data['content'], date)
 
     r.hset(data['domain'], mapping=announcement.to_dict())
 
-    if args and int(args) > 0:
-        r.expire(data['domain'], int(args))
+    # Optional ttl field for the announcement
+    ttl = request.args.get('ttl')
+    if ttl and int(ttl) > 0:
+        ttl_hours = int(ttl) * 60 * 60
+        r.expire(data['domain'], ttl_hours)
 
     return jsonify(announcement.to_dict()), 201
 
@@ -78,12 +79,12 @@ def get_announcement():
         return jsonify({'error': 'No domain provided'}), 400
 
     announcement_data = r.hgetall(domain)
-    announcement_dict = {}
 
     # No matching domain found in db
     if not announcement_data:
         return jsonify({'error': 'No announcements found'}), 404
 
+    announcement_dict = {}
     # Decode the key value pair that's hashed
     for k, v in announcement_data.items():
         key = k.decode("utf-8")
@@ -125,7 +126,6 @@ def check_auth(api_key):
     # Checking if api key exists
     if api_key is not None:
         return r.hget('AUTH', 'api_key').decode("utf-8") == hashlib.sha256(api_key.encode('utf-8')).hexdigest()
-
     return False
 
 
