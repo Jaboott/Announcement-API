@@ -129,8 +129,8 @@ def check_auth(api_key):
     return False
 
 
-@app.route('/announcement/api-key', methods=['GET'])
-def get_api_key():
+@app.route('/announcement/auth', methods=['GET'])
+def auth():
     # Initialize the admin if it's not set
     if not r.hgetall('AUTH'):
         return initialize_admin()
@@ -184,7 +184,7 @@ def authorize():
     user_info = resp.json()
     # do something with the token and profile
     session['email'] = user_info['email']
-    return redirect('/announcement/api-key')
+    return redirect('/announcement/auth')
 
 
 @app.route('/logout')

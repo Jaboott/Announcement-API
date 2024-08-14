@@ -1,6 +1,14 @@
 # Announcement API
 This API is designed for a user to dynamically manage announcements for their websites.
 
+
+## Auth
+Give user the API key needed to access some routes
+
+### Route:
+`/announcement/auth`
+
+
 ## Add Announcement
 Post an announcement using API
 
