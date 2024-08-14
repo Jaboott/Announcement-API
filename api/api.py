@@ -1,9 +1,11 @@
 import datetime
+import os
 import secrets
 import hashlib
 
 import redis
 
+from dotenv import load_dotenv
 from flask import jsonify, request, Flask, url_for, redirect, session
 from authlib.integrations.flask_client import OAuth
 
@@ -11,11 +13,13 @@ r = redis.Redis(host='localhost', port=6379, db=0)
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 
+load_dotenv()
+
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
-    client_id="CLIENT_ID",
-    client_secret="CLIENT_SECRET",
+    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
     access_token_url='https://accounts.google.com/o/oauth2/token',
     access_token_params=None,
     authorize_url='https://accounts.google.com/o/oauth2/auth',
